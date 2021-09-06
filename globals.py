@@ -1,0 +1,2 @@
+GLOBAL_NAME = "Wobot"
+EMBED_COLOR = "#4287f5"
