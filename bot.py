@@ -15,4 +15,5 @@ class Bot(commands.Bot):
         print(f'Logged in as {self.user.name} | {self.user.id}')
  
 bot = Bot()
-bot.run('ODgzNTU0MzAzNTczMzgxMTQx.YTLoEQ.dcUjSN_jbW_OgoFFv4Ji6KSER74')
+token = input("enter token")
+bot.run(token)
