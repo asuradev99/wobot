@@ -3,7 +3,7 @@ import wavelink
 import asyncio
 
 from discord import Embed
-from discord.ext import commands
+from discord.ext import tasks, commands
 from enum import Enum
 from globals import GLOBAL_NAME
 import datetime
@@ -85,6 +85,7 @@ class Music(commands.Cog):
         print(query)
         self.track_finished.clear()
         self.cur_ctx = ctx
+        #
         tracks = await self.bot.wavelink.get_tracks(f'ytsearch:{query}')
         if not tracks:
             return await ctx.send('Could not find any songs with that query.')
@@ -108,6 +109,7 @@ class Music(commands.Cog):
             await ctx.send("e")
             self.bot.loop.create_task(self.play_loop(ctx))
 
+        
     @commands.command(name='list',  aliases=['q'], brief=f'Lists the tracks in the queue.')
     async def list(self, ctx):
         emb = Embed(
@@ -132,9 +134,14 @@ class Music(commands.Cog):
     @commands.command(name='skip',  aliases=['s'], brief='Skips the track that is currently playing.')
     async def skip(self, ctx):
         player = self.bot.wavelink.get_player(ctx.guild.id)
-        self.bot.tas
         await player.stop()
-        self.bot.loop.create_task(self.play_loop(ctx))
+        del self.queue[0]
+        for task in list(asyncio.all_tasks()):
+            if "Music.play_loop" in str(task.get_coro()):
+                task.cancel()
+                self.bot.loop.create_task(self.play_loop(ctx))
+                break
+        
 
     @commands.command(name='pause',  aliases=['e'], brief=f'Pauses the current track.')
     async def pause(self, ctx):
