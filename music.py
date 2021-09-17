@@ -6,12 +6,15 @@ from discord import Embed
 from discord.ext import commands
 from enum import Enum
 from globals import GLOBAL_NAME
+import datetime
+
 
 class State(Enum):
     IDLE = 0
     PLAY_LOOP = 1
     LOOP_SINGLE = 2
-    
+
+
 class Music(commands.Cog):
 
     def __init__(self, bot):
@@ -23,17 +26,18 @@ class Music(commands.Cog):
         if not hasattr(bot, 'wavelink'):
             self.bot.wavelink = wavelink.Client(bot=self.bot)
         self.bot.loop.create_task(self.start_nodes())
+
     async def on_disconnect(self):
         print("disconnected")
-        
+
     async def start_nodes(self):
         await self.bot.wait_until_ready()
         node = await self.bot.wavelink.initiate_node(host='127.0.0.1',
-                                            port=2333,
-                                            rest_uri='http://127.0.0.1:2333',
-                                            password='youshallnotpass',
-                                            identifier='TEST',
-                                            region='us_west')
+                                                     port=2333,
+                                                     rest_uri='http://127.0.0.1:2333',
+                                                     password='youshallnotpass',
+                                                     identifier='TEST',
+                                                     region='us_west')
         node.set_hook(self.on_event_hook)
 
     async def play_loop(self, ctx):
@@ -43,25 +47,25 @@ class Music(commands.Cog):
         player = self.bot.wavelink.get_player(ctx.guild.id)
         if not player.is_connected:
             await ctx.invoke(self.connect)
-
         await ctx.send(f'Now playing {str(track)}.')
         await player.play(track)
         await self.track_finished.wait()
-        if self.state == State.PLAY_LOOP: 
+        if self.state == State.PLAY_LOOP:
             del self.queue[0]
         self.bot.loop.create_task(self.play_loop(ctx))
 
     async def on_event_hook(self, event):
         if isinstance(event, (wavelink.TrackEnd)):
-            self.track_finished.set()    
+            self.track_finished.set()
 
     @commands.command(name='connect', aliases=['c'], brief=f'Connects {GLOBAL_NAME} to the specified voice channel.')
-    async def connect(self, ctx, *, channel: discord.VoiceChannel=None):
+    async def connect(self, ctx, *, channel: discord.VoiceChannel = None):
         if not channel:
             try:
                 channel = ctx.author.voice.channel
             except AttributeError:
-                raise discord.DiscordException('No channel to join. Please either specify a valid channel or join one.')
+                raise discord.DiscordException(
+                    'No channel to join. Please either specify a valid channel or join one.')
 
         player = self.bot.wavelink.get_player(ctx.guild.id)
         await ctx.send(f'Connecting to **`#{channel.name}`**')
@@ -75,7 +79,7 @@ class Music(commands.Cog):
             await player.stop()
             await player.disconnect()
             await player.destroy()
-            
+
     @commands.command(name='play',  aliases=['p'], brief=f'Searches for the given track name with the specified source and plays the first result in the voice channel you are in, adding it to the queue. You must be in a voice channel to use this command.')
     async def play(self, ctx, *, query: str):
         print(query)
@@ -86,10 +90,23 @@ class Music(commands.Cog):
             return await ctx.send('Could not find any songs with that query.')
 
         self.queue.append(tracks[0])
-        await ctx.send(f'Added {tracks[0].title} to the queue.')
+        embed = discord.Embed(title=f"**{tracks[0].title}**",
+                              description="This track has been added to the queue.",
+                              url=tracks[0].uri
+                              )
+        embed.set_thumbnail(url=tracks[0].thumb)
+        embed.add_field(name="Uploader", value=tracks[0].author, inline=True)
+
+        time_mil = tracks[0].duration
+        seconds=time_mil/1000
+       
+
+        embed.add_field(name="Duration", value=str(datetime.timedelta(seconds=seconds)), inline=True)
+        await ctx.send(embed=embed)
         if self.state == State.IDLE:
             self.state = State.PLAY_LOOP
-            self.bot.loop.create_task(self.play_loop(ctx)) 
+            await ctx.send("e")
+            self.bot.loop.create_task(self.play_loop(ctx))
 
     @commands.command(name='list',  aliases=['q'], brief=f'Lists the tracks in the queue.')
     async def list(self, ctx):
@@ -103,15 +120,21 @@ class Music(commands.Cog):
             emb.description += f'**{str(index + 1)}.** [{elem.title}]({elem.uri})\n'
         return await ctx.send(embed=emb)
 
-
     @commands.command(name='loop',  aliases=['l'], brief=f'Toggles looping the current track forever, overriding the queue. `<toggle>` must be either `on` or `off`.')
     async def loop(self, ctx, toggle):
         if self.state == State.PLAY_LOOP:
             if toggle == "on":
-                self.state = State.LOOP_SINGLE 
-        elif self.state == State.LOOP_SINGLE: 
-            if toggle == "off": 
+                self.state = State.LOOP_SINGLE
+        elif self.state == State.LOOP_SINGLE:
+            if toggle == "off":
                 self.state = State.PLAY_LOOP
+    
+    @commands.command(name='skip',  aliases=['s'], brief='Skips the track that is currently playing.')
+    async def skip(self, ctx):
+        player = self.bot.wavelink.get_player(ctx.guild.id)
+        self.bot.tas
+        await player.stop()
+        self.bot.loop.create_task(self.play_loop(ctx))
 
     @commands.command(name='pause',  aliases=['e'], brief=f'Pauses the current track.')
     async def pause(self, ctx):
@@ -122,4 +145,3 @@ class Music(commands.Cog):
     async def resume(self, ctx):
         player = self.bot.wavelink.get_player(ctx.guild.id)
         await player.set_pause(False)
-

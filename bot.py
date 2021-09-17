@@ -14,6 +14,5 @@ class Bot(commands.Bot):
     async def on_ready(self):
         print(f'Logged in as {self.user.name} | {self.user.id}')
  
-
 bot = Bot()
 bot.run('ODgzNTU0MzAzNTczMzgxMTQx.YTLoEQ.dcUjSN_jbW_OgoFFv4Ji6KSER74')
