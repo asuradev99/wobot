@@ -44,6 +44,7 @@ class Music(commands.Cog):
         await ctx.send(f'Debug: reached play loop')
         self.track_finished.clear()
         track = self.queue[0]
+        print(track.info)
         player = self.bot.wavelink.get_player(ctx.guild.id)
         if not player.is_connected:
             await ctx.invoke(self.connect)
@@ -82,6 +83,9 @@ class Music(commands.Cog):
 
     @commands.command(name='play',  aliases=['p'], brief=f'Searches for the given track name with the specified source and plays the first result in the voice channel you are in, adding it to the queue. You must be in a voice channel to use this command.')
     async def play(self, ctx, *, query: str):
+        self.bot.loop.create_task(self.query(ctx, query))
+
+    async def query(self, ctx, query: str):
         print(query)
         self.track_finished.clear()
         self.cur_ctx = ctx
@@ -108,8 +112,6 @@ class Music(commands.Cog):
             self.state = State.PLAY_LOOP
             await ctx.send("e")
             self.bot.loop.create_task(self.play_loop(ctx))
-
-        
     @commands.command(name='list',  aliases=['q'], brief=f'Lists the tracks in the queue.')
     async def list(self, ctx):
         emb = Embed(
