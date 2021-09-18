@@ -75,6 +75,7 @@ class Music(commands.Cog):
 
     async def on_event_hook(self, event):
         if isinstance(event, (wavelink.TrackEnd)):
+            print(event.reason)
             if event.reason == "FINISHED":
                 self.track_finished.set()
 
@@ -86,8 +87,14 @@ class Music(commands.Cog):
             except AttributeError:
                 raise discord.DiscordException(
                     'No channel to join. Please either specify a valid channel or join one.')
+        else: 
+            if player.is_playing: 
+                
+            print("State" + str(self.state))
 
         player = self.bot.wavelink.get_player(ctx.guild.id)
+        print("Playing: " + str(player.is_playing))
+        print("Current task: " + str(asyncio.all_tasks()) + " eeee " + str(asyncio.current_task()))
         await ctx.send(f'Connecting to **`#{channel.name}`**')
         await player.connect(channel.id)
 
@@ -143,7 +150,8 @@ class Music(commands.Cog):
         if "s" in l_opt:
             random.shuffle(self.queue)
             emb.description += "The queue has been shuffled.\n"
-        
+        if (len(self.queue) == 0):
+            emb.description += "The queue is currently empty."
         for index, elem in enumerate(self.queue):
             emb.description += f'**{str(index + 1)}.** [{elem.title}]({elem.uri})\n'
         
@@ -164,6 +172,8 @@ class Music(commands.Cog):
     
     @commands.command(name='skip',  aliases=['s'], brief='Skips the track that is currently playing.')
     async def skip(self, ctx, num = 1):
+        if len(self.queue) == 0:
+            return
         player = self.bot.wavelink.get_player(ctx.guild.id)
         await player.stop()
         for _ in range(num):
