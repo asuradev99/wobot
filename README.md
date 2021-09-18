@@ -11,3 +11,4 @@ Todo
 - [ ] Current song info
 - [ ] Diagnostic utilities (ping, cpu, etc.)
 - [ ] Admin/DJ roles and restrictions
+- [ ] Error Handling
