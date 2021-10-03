@@ -10,9 +10,12 @@ class ErrorHandler(commands.Cog):
         print(str(type(error)) + str(error))
         if isinstance(error, commands.CommandNotFound):
             embed=discord.Embed(title="**Command Not Found**", description="The command you typed was not found. See `help` for a list of all the commands available.", color=0xe01b24)
-            await ctx.send(embed=embed)
+            
         if isinstance(error, (commands.errors.CommandInvokeError)):
             embed=discord.Embed(title="**Command Error**", description=f"{str(error.original)}", color=0xe01b24)
-            await ctx.send(embed=embed)
+            
             print(error.original)
+        if isinstance(error, (commands.errors.MissingPermissions) ):
+            embed=discord.Embed(title="**Permission Error**", description=f"You don't have permission to use that command!", color=0xe01b24)
+        await ctx.send(embed=embed)
         
